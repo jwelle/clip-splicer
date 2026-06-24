@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Affiliate Clip Splicer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="panel">
+        <div class="intro">
+          <p class="eyebrow">Local video utility</p>
+          <h1>Affiliate Clip Splicer</h1>
+          <p>Add your reusable promo clip to your videos automatically.</p>
+        </div>
+
+        {% if error_message %}
+          <div class="message error" role="alert">{{ error_message }}</div>
+        {% endif %}
+
+        {% if success_message %}
+          <div class="message success" role="status">
+            <span>{{ success_message }}</span>
+            {% if download_filename %}
+              <a href="{{ url_for('download', filename=download_filename) }}">Download finished video</a>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <form action="{{ url_for('process') }}" method="post" enctype="multipart/form-data" id="splice-form">
+          <div class="field-grid">
+            <label class="file-field">
+              <span>Main video</span>
+              <input type="file" name="main_video" accept=".mp4,.mov,.m4v" required>
+            </label>
+
+            <label class="file-field">
+              <span>Promo clip</span>
+              <input type="file" name="promo_clip" accept=".mp4,.mov,.m4v" required>
+            </label>
+          </div>
+
+          <fieldset class="placement-group">
+            <legend>Placement</legend>
+            <label>
+              <input type="radio" name="placement" value="beginning" checked>
+              <span>Beginning</span>
+            </label>
+            <label>
+              <input type="radio" name="placement" value="end">
+              <span>End</span>
+            </label>
+            <label>
+              <input type="radio" name="placement" value="custom">
+              <span>Custom timestamp</span>
+            </label>
+          </fieldset>
+
+          <div class="timestamp-field" id="timestamp-field" hidden>
+            <label for="timestamp">Insert at timestamp</label>
+            <input type="text" id="timestamp" name="timestamp" placeholder="01:30">
+            <p>Enter seconds, MM:SS, or HH:MM:SS. Example: 30, 01:30, or 00:04:15.</p>
+          </div>
+
+          <div class="status-area" id="status-area" aria-live="polite"></div>
+
+          <button type="submit" id="generate-button">Generate Video</button>
+        </form>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

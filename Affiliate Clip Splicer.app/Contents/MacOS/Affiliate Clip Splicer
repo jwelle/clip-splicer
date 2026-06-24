@@ -1,0 +1,18 @@
+#!/bin/bash
+
+PROJECT_DIR="/Users/jonathanwelle/Desktop/clip-splicer"
+LAUNCHER="$PROJECT_DIR/launch_app.command"
+
+if [ ! -f "$LAUNCHER" ]; then
+  osascript -e 'display dialog "launch_app.command could not be found in /Users/jonathanwelle/Desktop/clip-splicer." buttons {"OK"} default button "OK" with icon caution'
+  exit 1
+fi
+
+chmod +x "$LAUNCHER" >/dev/null 2>&1 || true
+
+osascript <<OSA
+ tell application "Terminal"
+   activate
+   do script quoted form of "$LAUNCHER"
+ end tell
+OSA
