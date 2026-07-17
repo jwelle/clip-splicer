@@ -1,0 +1,24 @@
+{
+  "clips": [
+    {
+      "id": "93edc6f2-47d6-4694-8822-8e84c95e03a4",
+      "name": "Promo Clip",
+      "type": "promo",
+      "filename": "93edc6f2-47d6-4694-8822-8e84c95e03a4_promo_clip_20260608_155628_235463_HL_Pro_Tool_Plug_with_captions.mp4",
+      "original_filename": "promo_clip_20260608_155628_235463_HL_Pro_Tool_Plug_with_captions.mp4",
+      "duration_seconds": 21.34,
+      "created_at": "2026-07-17T08:08:48",
+      "is_default": false
+    },
+    {
+      "id": "cc3cd1ec-fe60-42cd-8b90-4f0c8b50a301",
+      "name": "Promo Clip",
+      "type": "promo",
+      "filename": "cc3cd1ec-fe60-42cd-8b90-4f0c8b50a301_promo_clip_20260608_155628_235463_HL_Pro_Tool_Plug_with_captions.mp4",
+      "original_filename": "promo_clip_20260608_155628_235463_HL_Pro_Tool_Plug_with_captions.mp4",
+      "duration_seconds": 21.34,
+      "created_at": "2026-07-17T08:10:48",
+      "is_default": true
+    }
+  ]
+}

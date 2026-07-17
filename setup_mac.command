@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT_DIR="/Users/jonathanwelle/Desktop/clip-splicer"
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_DIR="venv"
 VENV_PYTHON="$VENV_DIR/bin/python"
 

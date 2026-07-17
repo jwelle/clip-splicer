@@ -1,12 +1,11 @@
 # Affiliate Clip Splicer
 
-Affiliate Clip Splicer is a small local web app that inserts a reusable promo clip into finished videos. Version 1 is designed for local use with FFmpeg and FFprobe.
+Affiliate Clip Splicer is a small local Flask web app that inserts a reusable promo clip into finished videos. It runs locally on macOS and Windows and uses FFmpeg/FFprobe from your system `PATH`.
 
 ## Requirements
 
 - Python 3
-- FFmpeg
-- FFprobe
+- FFmpeg and FFprobe
 - A modern web browser
 
 Supported video uploads:
@@ -17,186 +16,91 @@ Supported video uploads:
 
 ## Install FFmpeg
 
-Mac users can install FFmpeg with Homebrew:
+macOS:
 
 ```bash
 brew install ffmpeg
 ```
 
-Windows users can install FFmpeg from:
+Windows PowerShell:
 
-```text
-https://ffmpeg.org/download.html
+```powershell
+winget install --id Gyan.FFmpeg -e
 ```
 
-After installing, confirm both tools are available:
+After installing, open a new terminal and confirm both tools are available:
 
 ```bash
 ffmpeg -version
 ffprobe -version
 ```
 
-## Manual Setup
+## macOS Setup and Run
 
-Go to the project folder:
-
-```bash
-cd ~/Desktop/clip-splicer
-```
-
-Create a virtual environment:
-
-```bash
-python3 -m venv venv
-```
-
-Mac/Linux activation:
-
-```bash
-source venv/bin/activate
-```
-
-Windows activation:
-
-```bash
-venv\Scripts\activate
-```
-
-Install requirements:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run app manually:
-
-```bash
-python app.py
-```
-
-Open browser:
-
-```text
-http://127.0.0.1:5050
-```
-
-## How to Launch the App
-
-### Windows
-
-First-time setup:
-
-```text
-Double-click setup_windows.bat
-```
-
-Launch after setup:
-
-```text
-Double-click launch_app.bat
-```
-
-### Mac
-
-First-time setup from Terminal:
+From the project folder:
 
 ```bash
 cd ~/Desktop/clip-splicer
-chmod +x setup_mac.command
-chmod +x launch_app.command
-```
-
-Then double-click:
-
-```text
-setup_mac.command
-```
-
-Launch after setup:
-
-```text
-launch_app.command
-```
-
-You can also run the scripts directly from Terminal:
-
-```bash
-./setup_mac.command
-./launch_app.command
-```
-
-## Launching on Mac
-
-The Mac launcher files are designed for the local project folder:
-
-```bash
-cd /Users/jonathanwelle/Desktop/clip-splicer
-```
-
-Run this once after downloading, moving, or repairing the project:
-
-```bash
-cd /Users/jonathanwelle/Desktop/clip-splicer
-xattr -dr com.apple.quarantine .
-chmod +x setup_mac.command launch_app.command
-./setup_mac.command
-```
-
-After setup, launch the app by double-clicking either:
-
-```text
-launch_app.command
-Affiliate Clip Splicer.app
-```
-
-The launcher opens the app here:
-
-```text
-http://127.0.0.1:5050
-```
-
-Keep the Terminal window open while using the app. Press `Control+C` in that Terminal window to stop the server.
-
-If macOS blocks the launcher or says something is not permitted, run:
-
-```bash
-cd /Users/jonathanwelle/Desktop/clip-splicer
-xattr -dr com.apple.quarantine .
-chmod +x setup_mac.command launch_app.command
-./setup_mac.command
-```
-
-If the virtual environment still fails, rebuild it:
-
-```bash
-cd /Users/jonathanwelle/Desktop/clip-splicer
-rm -rf venv
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
-
-if [ -f "requirements.txt" ]; then
-  pip install -r requirements.txt
-else
-  pip install Flask Werkzeug
-fi
+python -m pip install -r requirements.txt
+python app.py
 ```
 
-Then launch again:
+Then open:
+
+```text
+http://127.0.0.1:5050
+```
+
+You can also use the Mac launch helpers:
 
 ```bash
+cd ~/Desktop/clip-splicer
+xattr -dr com.apple.quarantine .
+chmod +x setup_mac.command launch_app.command
+./setup_mac.command
 ./launch_app.command
+```
+
+After setup, double-clicking `launch_app.command` or `Affiliate Clip Splicer.app` should also work.
+
+## Windows Setup and Run
+
+From Windows PowerShell:
+
+```powershell
+cd "$HOME\Desktop\clip-splicer"
+python -m venv venv
+.\venv\Scripts\python.exe -m pip install --upgrade pip
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
+.\venv\Scripts\python.exe app.py
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5050
+```
+
+You can also double-click:
+
+```text
+setup_windows.bat
+launch_app.bat
 ```
 
 ## How to Use
 
 1. Open the app at `http://127.0.0.1:5050`.
-2. Upload the main video.
-3. Upload the reusable promo clip.
-4. Choose Beginning, End, or Custom timestamp.
-5. If using Custom timestamp, enter seconds, `MM:SS`, or `HH:MM:SS`.
-6. Click Generate Video.
-7. Download the finished MP4 when processing completes.
+2. Optionally select, upload once, or save an Intro.
+3. Upload the main video.
+4. Optionally select, upload once, or save a Promo clip, then choose Beginning, End, or Custom timestamp.
+5. Optionally select, upload once, or save an Outro.
+6. Click Generate Video and download the finished MP4 when processing completes.
+
+The resulting order is Intro + Main Video + Outro. A promo at the beginning is placed after the intro; a promo at the end is placed before the outro; a custom promo is inserted into the main video before the outro.
 
 Valid timestamp examples:
 
@@ -212,7 +116,7 @@ Valid timestamp examples:
 
 ## Troubleshooting
 
-If FFmpeg or FFprobe is missing, install FFmpeg and confirm both commands work:
+If the app says FFmpeg or FFprobe is missing, install FFmpeg with the command for your operating system above, then open a new terminal and run:
 
 ```bash
 ffmpeg -version
@@ -223,36 +127,30 @@ If the app cannot read the duration of a video, try a different `.mp4`, `.mov`, 
 
 If a generated output is missing or empty, try a short test video first and check the terminal window for detailed FFmpeg output.
 
-If Mac refuses to open a `.command` file, run:
+If macOS refuses to open a `.command` file, run:
 
 ```bash
-chmod +x setup_mac.command
-chmod +x launch_app.command
+chmod +x setup_mac.command launch_app.command
 ```
 
-## Future Packaging Options
+## Local Files
 
-Version 1 uses clickable launcher scripts.
+The app creates local runtime folders in the project directory:
 
-Future versions can be packaged as:
+- `uploads/`
+- `output/`
+- `temp/`
+- `venv/`
 
-- Windows: `.exe` using PyInstaller
-- Mac: `.app` bundle using PyInstaller or Platypus
-- Installer: `.dmg` for Mac or `.msi`/`.exe` installer for Windows
+The app also creates a persistent Clip Library:
 
-FFmpeg and FFprobe may need to be bundled into the packaged version or installed separately.
+- `clip_library/intros/`
+- `clip_library/outros/`
+- `clip_library/promos/`
+- `clip_library/clip_library.json`
 
-## Planned Features
+Use **Upload and save to library** to give a clip a friendly name and optionally make it the default for its type. Defaults are preselected the next time the page opens, but you can always choose **None**. Use **Manage Clip Library** to set/remove defaults or delete clips.
 
-- Batch process multiple videos
-- Save a default promo clip
-- Add fade transitions before and after the promo clip
-- Add affiliate disclosure text overlay
-- Create presets for YouTube, Shorts, LinkedIn, and Instagram
-- Create an optional intro/outro library
-- Add drag-and-drop uploads
-- Add progress bar
-- Add preview thumbnails
-- Remember last-used settings locally
-- Package as Windows `.exe`
-- Package as Mac `.app`
+The app copies saved videos into `clip_library` instead of linking arbitrary local browser paths. That makes saved selections reliable after browser restarts or moving the original file. Back up the entire `clip_library` folder (including `clip_library.json`) to preserve your saved clips and their names/defaults.
+
+These are ignored by Git.

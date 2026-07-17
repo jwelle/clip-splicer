@@ -12,64 +12,92 @@
         <div class="intro">
           <p class="eyebrow">Local video utility</p>
           <h1>Affiliate Clip Splicer</h1>
-          <p>Add your reusable promo clip to your videos automatically.</p>
+          <p>Combine optional intros, promo clips, and outros with your main video.</p>
         </div>
 
-        {% if error_message %}
-          <div class="message error" role="alert">{{ error_message }}</div>
-        {% endif %}
+        {% if error_message %}<div class="message error" role="alert">{{ error_message }}</div>{% endif %}
+        {% if success_message %}<div class="message success" role="status"><span>{{ success_message }}</span>{% if download_filename %}<a href="{{ url_for('download', filename=download_filename) }}">Download finished video</a>{% endif %}</div>{% endif %}
 
-        {% if success_message %}
-          <div class="message success" role="status">
-            <span>{{ success_message }}</span>
-            {% if download_filename %}
-              <a href="{{ url_for('download', filename=download_filename) }}">Download finished video</a>
-            {% endif %}
-          </div>
-        {% endif %}
+        {% macro clip_controls(type, label, collapsible=false) %}
+          {% set clips = clips_by_type[type] %}
+          {% set default = (clips | selectattr('is_default') | list | first) %}
+          {% if collapsible %}<details class="optional-clip-panel"><summary>{{ label }} <span>Optional</span></summary>{% endif %}
+          <fieldset class="clip-section" data-clip-section="{{ type }}">
+            <legend {% if collapsible %}class="sr-only"{% endif %}>{{ label }}</legend>
+            <label>Use
+              <select name="{{ type }}_mode" class="clip-mode">
+                <option value="none">None</option>
+                <option value="library" {% if default %}selected{% endif %}>Choose from Clip Library</option>
+                <option value="upload">Upload a one-time clip</option>
+                <option value="save">Upload and save to library</option>
+              </select>
+            </label>
+            <div class="clip-option" data-modes="library" {% if not default %}hidden{% endif %}>
+              <label>Saved {{ label | lower }}
+                <select name="{{ type }}_library_id">
+                  <option value="">Select a saved clip</option>
+                  {% for clip in clips %}
+                    <option value="{{ clip.id }}" {% if clip.is_default %}selected{% endif %} {% if not clip.available %}disabled{% endif %}>{{ clip.name }}{% if clip.is_default %} (default){% endif %}{% if not clip.available %} (missing file){% endif %}</option>
+                  {% endfor %}
+                </select>
+              </label>
+            </div>
+            <div class="clip-option" data-modes="upload save" hidden>
+              <label>Video file<input type="file" name="{{ type }}_file" accept=".mp4,.mov,.m4v"></label>
+            </div>
+            <div class="clip-option" data-modes="save" hidden>
+              <label>Friendly clip name<input type="text" name="{{ type }}_name" maxlength="120"></label>
+              <label class="checkbox"><input type="checkbox" name="{{ type }}_default"> Make this my default</label>
+            </div>
+          </fieldset>
+          {% if collapsible %}</details>{% endif %}
+        {% endmacro %}
 
         <form action="{{ url_for('process') }}" method="post" enctype="multipart/form-data" id="splice-form">
-          <div class="field-grid">
-            <label class="file-field">
-              <span>Main video</span>
-              <input type="file" name="main_video" accept=".mp4,.mov,.m4v" required>
-            </label>
-
-            <label class="file-field">
-              <span>Promo clip</span>
-              <input type="file" name="promo_clip" accept=".mp4,.mov,.m4v" required>
-            </label>
-          </div>
-
-          <fieldset class="placement-group">
-            <legend>Placement</legend>
-            <label>
-              <input type="radio" name="placement" value="beginning" checked>
-              <span>Beginning</span>
-            </label>
-            <label>
-              <input type="radio" name="placement" value="end">
-              <span>End</span>
-            </label>
-            <label>
-              <input type="radio" name="placement" value="custom">
-              <span>Custom timestamp</span>
-            </label>
+          {{ clip_controls('intro', 'Intro', true) }}
+          <fieldset class="clip-section">
+            <legend>Main Video and Promo Insertion</legend>
+            <label class="file-field"><span>Main video</span><input type="file" name="main_video" accept=".mp4,.mov,.m4v" required></label>
+            {{ clip_controls('promo', 'Promo clip') }}
+            <fieldset class="placement-group" id="placement-group">
+              <legend>Promo placement</legend>
+              <label><input type="radio" name="placement" value="beginning" checked> Beginning</label>
+              <label><input type="radio" name="placement" value="end"> End</label>
+              <label><input type="radio" name="placement" value="custom"> Custom timestamp</label>
+            </fieldset>
+            <div class="timestamp-field" id="timestamp-field" hidden><label for="timestamp">Insert at timestamp</label><input type="text" id="timestamp" name="timestamp" placeholder="01:30"><p>Enter seconds, MM:SS, or HH:MM:SS.</p></div>
           </fieldset>
-
-          <div class="timestamp-field" id="timestamp-field" hidden>
-            <label for="timestamp">Insert at timestamp</label>
-            <input type="text" id="timestamp" name="timestamp" placeholder="01:30">
-            <p>Enter seconds, MM:SS, or HH:MM:SS. Example: 30, 01:30, or 00:04:15.</p>
+          {{ clip_controls('outro', 'Outro', true) }}
+          <div class="status-area" id="status-area" aria-live="polite" hidden>
+            <div class="processing-heading">Video processing in progress</div>
+            <div class="progress-label" id="progress-label">Preparing your video</div>
+            <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-percent" id="progress-percent">0% complete</div>
           </div>
-
-          <div class="status-area" id="status-area" aria-live="polite"></div>
-
           <button type="submit" id="generate-button">Generate Video</button>
         </form>
+
+        <section class="library-manager">
+          <h2>Manage Clip Library</h2>
+          <p>Saved clips are copied into this app’s local Clip Library.</p>
+          {% for type, label in [('intro', 'Intros'), ('outro', 'Outros'), ('promo', 'Promos')] %}
+            <div class="library-group"><h3>{{ label }}</h3>
+              {% for clip in clips_by_type[type] %}
+                <article class="library-item {% if not clip.available %}unavailable{% endif %}">
+                  <div><strong>{{ clip.name }}</strong>{% if clip.is_default %}<span class="badge">Default</span>{% endif %}<small>{{ clip.original_filename }} · {{ '%.2f'|format(clip.duration_seconds) }} seconds{% if not clip.available %} · file missing{% endif %}</small></div>
+                  <div class="library-actions">
+                    <form action="{{ url_for('set_library_default') }}" method="post"><input type="hidden" name="clip_id" value="{{ clip.id }}"><input type="hidden" name="make_default" value="{{ 'false' if clip.is_default else 'true' }}"><button type="submit" class="secondary">{{ 'Remove default' if clip.is_default else 'Set default' }}</button></form>
+                    <form action="{{ url_for('delete_library_clip') }}" method="post" class="delete-form"><input type="hidden" name="clip_id" value="{{ clip.id }}"><button type="submit" class="danger">Delete</button></form>
+                  </div>
+                </article>
+              {% else %}<p class="empty-state">No saved {{ label | lower }}.</p>{% endfor %}
+            </div>
+          {% endfor %}
+        </section>
       </section>
     </main>
-
     <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>
 </html>
