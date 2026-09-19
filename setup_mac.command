@@ -51,7 +51,9 @@ else
 fi
 
 if command -v xattr >/dev/null 2>&1; then
-  xattr -dr com.apple.quarantine "$VENV_DIR" >/dev/null 2>&1 || true
+  # The virtual environment contains links into Apple's protected developer tools.
+  # Do not recurse into it when clearing Finder's download quarantine metadata.
+  xattr -d com.apple.quarantine "$VENV_DIR" >/dev/null 2>&1 || true
 fi
 
 if [ ! -x "$VENV_PYTHON" ]; then
