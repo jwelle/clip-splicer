@@ -6,8 +6,6 @@ APP_FILE="app.py"
 VENV_DIR="venv"
 VENV_PYTHON="$VENV_DIR/bin/python"
 VENV_PIP="$VENV_DIR/bin/pip"
-PID_FILE="clipsplicer.pid"
-LOG_FILE="clipsplicer.log"
 
 pause_before_exit() {
   echo ""
@@ -21,10 +19,6 @@ fail() {
   exit 1
 }
 
-server_is_ready() {
-  curl -fsS --max-time 1 "$APP_URL" >/dev/null 2>&1
-}
-
 cd "$PROJECT_DIR" || fail "Could not open project folder: $PROJECT_DIR"
 
 clear
@@ -36,7 +30,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 if command -v xattr >/dev/null 2>&1; then
   echo "Removing macOS quarantine attributes if present..."
-  xattr -dr com.apple.quarantine "$PROJECT_DIR" >/dev/null 2>&1 || true
+  xattr -d com.apple.quarantine "$PROJECT_DIR" >/dev/null 2>&1 || true
 fi
 
 chmod +x setup_mac.command launch_app.command >/dev/null 2>&1 || true
@@ -71,18 +65,13 @@ if [ ! -x "$VENV_PIP" ]; then
   fail "The virtual environment is missing $VENV_PIP. Run setup_mac.command to repair it."
 fi
 
-"$VENV_PYTHON" -m pip install --upgrade pip || fail "Could not upgrade pip."
-
-if [ -f "requirements.txt" ]; then
-  echo "Installing requirements..."
-  "$VENV_PYTHON" -m pip install -r requirements.txt || fail "Could not install requirements.txt."
-else
-  echo "No requirements.txt found. Installing Flask and Werkzeug..."
-  "$VENV_PYTHON" -m pip install Flask Werkzeug || fail "Could not install Flask and Werkzeug."
-fi
-
-if ! "$VENV_PYTHON" -c "import flask" >/dev/null 2>&1; then
-  fail "Flask is still not available inside the virtual environment. Run setup_mac.command again."
+if ! "$VENV_PYTHON" -c "import flask, werkzeug" >/dev/null 2>&1; then
+  echo "Installing required Python packages..."
+  if [ -f "requirements.txt" ]; then
+    "$VENV_PYTHON" -m pip install -r requirements.txt || fail "Could not install requirements.txt."
+  else
+    "$VENV_PYTHON" -m pip install Flask Werkzeug || fail "Could not install Flask and Werkzeug."
+  fi
 fi
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
@@ -93,33 +82,31 @@ if ! command -v ffprobe >/dev/null 2>&1; then
   fail "FFprobe was not found. Install FFmpeg with Homebrew using: brew install ffmpeg"
 fi
 
-if server_is_ready; then
-  echo "Clip Splicer is already running. Opening $APP_URL ..."
-  open "$APP_URL"
-  exit 0
-fi
-
 echo "FFmpeg: $(command -v ffmpeg)"
 echo "FFprobe: $(command -v ffprobe)"
 echo ""
 echo "Starting Flask server..."
 
-nohup "$VENV_PYTHON" "$APP_FILE" >"$LOG_FILE" 2>&1 < /dev/null &
+"$VENV_PYTHON" "$APP_FILE" &
 APP_PID=$!
-echo "$APP_PID" > "$PID_FILE"
 
 for attempt in {1..40}; do
-  if server_is_ready; then
+  if curl -fsS "$APP_URL" >/dev/null 2>&1; then
     echo "Opening $APP_URL ..."
     open "$APP_URL"
     echo ""
-    echo "Affiliate Clip Splicer is running. You can close this Terminal window."
-    exit 0
+    echo "Affiliate Clip Splicer is running. Keep this Terminal window open while you use the app."
+    echo "You can minimize it. Press Control+C here when you are done."
+    wait "$APP_PID"
+    APP_STATUS=$?
+    echo ""
+    echo "App stopped."
+    pause_before_exit
+    exit "$APP_STATUS"
   fi
 
   if ! kill -0 "$APP_PID" >/dev/null 2>&1; then
     echo ""
-    echo "Server details were saved to $PROJECT_DIR/$LOG_FILE"
     echo "The app stopped before it was ready. Check the messages above for details."
     pause_before_exit
     exit 1
@@ -131,6 +118,5 @@ done
 echo ""
 echo "The app did not become ready at $APP_URL."
 kill "$APP_PID" >/dev/null 2>&1 || true
-rm -f "$PID_FILE"
 pause_before_exit
 exit 1

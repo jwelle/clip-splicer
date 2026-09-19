@@ -27,7 +27,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 if command -v xattr >/dev/null 2>&1; then
   echo "Removing macOS quarantine attributes if present..."
-  xattr -dr com.apple.quarantine "$PROJECT_DIR" >/dev/null 2>&1 || true
+  xattr -d com.apple.quarantine "$PROJECT_DIR" >/dev/null 2>&1 || true
 fi
 
 chmod +x setup_mac.command launch_app.command >/dev/null 2>&1 || true
