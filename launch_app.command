@@ -6,6 +6,8 @@ APP_FILE="app.py"
 VENV_DIR="venv"
 VENV_PYTHON="$VENV_DIR/bin/python"
 VENV_PIP="$VENV_DIR/bin/pip"
+PID_FILE="clipsplicer.pid"
+LOG_FILE="clipsplicer.log"
 
 pause_before_exit() {
   echo ""
@@ -17,6 +19,10 @@ fail() {
   echo "ERROR: $1"
   pause_before_exit
   exit 1
+}
+
+server_is_ready() {
+  curl -fsS --max-time 1 "$APP_URL" >/dev/null 2>&1
 }
 
 cd "$PROJECT_DIR" || fail "Could not open project folder: $PROJECT_DIR"
@@ -87,31 +93,33 @@ if ! command -v ffprobe >/dev/null 2>&1; then
   fail "FFprobe was not found. Install FFmpeg with Homebrew using: brew install ffmpeg"
 fi
 
+if server_is_ready; then
+  echo "Clip Splicer is already running. Opening $APP_URL ..."
+  open "$APP_URL"
+  exit 0
+fi
+
 echo "FFmpeg: $(command -v ffmpeg)"
 echo "FFprobe: $(command -v ffprobe)"
 echo ""
 echo "Starting Flask server..."
 
-"$VENV_PYTHON" "$APP_FILE" &
+nohup "$VENV_PYTHON" "$APP_FILE" >"$LOG_FILE" 2>&1 < /dev/null &
 APP_PID=$!
+echo "$APP_PID" > "$PID_FILE"
 
 for attempt in {1..40}; do
-  if curl -fsS "$APP_URL" >/dev/null 2>&1; then
+  if server_is_ready; then
     echo "Opening $APP_URL ..."
     open "$APP_URL"
     echo ""
-    echo "Affiliate Clip Splicer is running. Leave this Terminal window open while you use the app."
-    echo "Press Control+C to stop the server."
-    wait "$APP_PID"
-    APP_STATUS=$?
-    echo ""
-    echo "App stopped."
-    pause_before_exit
-    exit "$APP_STATUS"
+    echo "Affiliate Clip Splicer is running. You can close this Terminal window."
+    exit 0
   fi
 
   if ! kill -0 "$APP_PID" >/dev/null 2>&1; then
     echo ""
+    echo "Server details were saved to $PROJECT_DIR/$LOG_FILE"
     echo "The app stopped before it was ready. Check the messages above for details."
     pause_before_exit
     exit 1
@@ -123,5 +131,6 @@ done
 echo ""
 echo "The app did not become ready at $APP_URL."
 kill "$APP_PID" >/dev/null 2>&1 || true
+rm -f "$PID_FILE"
 pause_before_exit
 exit 1

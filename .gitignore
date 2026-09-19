@@ -11,3 +11,5 @@ temp/
 # Local environment files
 .env
 .env.*
+clipsplicer.log
+clipsplicer.pid
