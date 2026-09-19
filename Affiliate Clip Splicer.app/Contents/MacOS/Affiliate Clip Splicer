@@ -1,10 +1,11 @@
 #!/bin/bash
 
-PROJECT_DIR="/Users/jonathanwelle/Desktop/clip-splicer"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 LAUNCHER="$PROJECT_DIR/launch_app.command"
 
 if [ ! -f "$LAUNCHER" ]; then
-  osascript -e 'display dialog "launch_app.command could not be found in /Users/jonathanwelle/Desktop/clip-splicer." buttons {"OK"} default button "OK" with icon caution'
+  osascript -e 'display dialog "launch_app.command could not be found next to Affiliate Clip Splicer.app." buttons {"OK"} default button "OK" with icon caution'
   exit 1
 fi
 

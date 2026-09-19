@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT_DIR="/Users/jonathanwelle/Desktop/clip-splicer"
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_URL="http://127.0.0.1:5050"
 APP_FILE="app.py"
 VENV_DIR="venv"
