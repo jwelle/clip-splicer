@@ -3,6 +3,7 @@
 __pycache__/
 *.py[cod]
 venv/
+mac_packages/
 venv_broken_*/
 uploads/
 output/
@@ -11,3 +12,5 @@ temp/
 # Local environment files
 .env
 .env.*
+clipsplicer-launch.log
+clipsplicer-launch.log

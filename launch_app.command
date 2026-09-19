@@ -3,9 +3,8 @@
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_URL="http://127.0.0.1:5050"
 APP_FILE="app.py"
-VENV_DIR="venv"
-VENV_PYTHON="$VENV_DIR/bin/python"
-VENV_PIP="$VENV_DIR/bin/pip"
+MAC_PACKAGES_DIR="mac_packages"
+LAUNCH_LOG="clipsplicer-launch.log"
 
 pause_before_exit() {
   echo ""
@@ -21,11 +20,13 @@ fail() {
 
 cd "$PROJECT_DIR" || fail "Could not open project folder: $PROJECT_DIR"
 
+exec > >(tee "$LAUNCH_LOG") 2>&1
+
 clear
 printf "Starting Affiliate Clip Splicer...\n"
 printf "Project folder: %s\n" "$(pwd)"
 
-unset __PYVENV_LAUNCHER__
+unset __PYVENV_LAUNCHER__ PYTHONHOME PYTHONPATH VIRTUAL_ENV
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 if command -v xattr >/dev/null 2>&1; then
@@ -46,31 +47,15 @@ if [ ! -f "$APP_FILE" ]; then
   fail "Could not find $APP_FILE in $PROJECT_DIR."
 fi
 
-if [ ! -d "$VENV_DIR" ]; then
-  echo "Virtual environment not found. Creating it now..."
-  "$PYTHON3_BIN" -m venv "$VENV_DIR" || fail "Could not create the virtual environment."
-fi
+mkdir -p "$MAC_PACKAGES_DIR" || fail "Could not prepare the Mac package folder."
+export PYTHONPATH="$PROJECT_DIR/$MAC_PACKAGES_DIR"
 
-if command -v xattr >/dev/null 2>&1; then
-  # The virtual environment contains links into Apple's protected developer tools.
-  # Do not recurse into it when clearing Finder's download quarantine metadata.
-  xattr -d com.apple.quarantine "$VENV_DIR" >/dev/null 2>&1 || true
-fi
-
-if [ ! -x "$VENV_PYTHON" ]; then
-  fail "The virtual environment is missing $VENV_PYTHON. Run setup_mac.command to repair it."
-fi
-
-if [ ! -x "$VENV_PIP" ]; then
-  fail "The virtual environment is missing $VENV_PIP. Run setup_mac.command to repair it."
-fi
-
-if ! "$VENV_PYTHON" -c "import flask, werkzeug" >/dev/null 2>&1; then
+if ! "$PYTHON3_BIN" -c "import flask, werkzeug" >/dev/null 2>&1; then
   echo "Installing required Python packages..."
   if [ -f "requirements.txt" ]; then
-    "$VENV_PYTHON" -m pip install -r requirements.txt || fail "Could not install requirements.txt."
+    "$PYTHON3_BIN" -m pip install --upgrade --target "$MAC_PACKAGES_DIR" -r requirements.txt || fail "Could not install required Python packages."
   else
-    "$VENV_PYTHON" -m pip install Flask Werkzeug || fail "Could not install Flask and Werkzeug."
+    "$PYTHON3_BIN" -m pip install --upgrade --target "$MAC_PACKAGES_DIR" Flask Werkzeug || fail "Could not install Flask and Werkzeug."
   fi
 fi
 
@@ -87,7 +72,7 @@ echo "FFprobe: $(command -v ffprobe)"
 echo ""
 echo "Starting Flask server..."
 
-"$VENV_PYTHON" "$APP_FILE" &
+"$PYTHON3_BIN" "$APP_FILE" &
 APP_PID=$!
 
 for attempt in {1..40}; do

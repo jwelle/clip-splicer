@@ -1,8 +1,7 @@
 #!/bin/bash
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-VENV_DIR="venv"
-VENV_PYTHON="$VENV_DIR/bin/python"
+MAC_PACKAGES_DIR="mac_packages"
 
 pause_before_exit() {
   echo ""
@@ -22,7 +21,7 @@ clear
 echo "Setting up Affiliate Clip Splicer..."
 echo "Project folder: $(pwd)"
 
-unset __PYVENV_LAUNCHER__
+unset __PYVENV_LAUNCHER__ PYTHONHOME PYTHONPATH VIRTUAL_ENV
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 if command -v xattr >/dev/null 2>&1; then
@@ -39,38 +38,18 @@ fi
 PYTHON3_BIN="$(command -v python3)"
 echo "Python: $($PYTHON3_BIN --version 2>&1)"
 
-if [ ! -d "$VENV_DIR" ]; then
-  echo "Creating virtual environment..."
-  "$PYTHON3_BIN" -m venv "$VENV_DIR" || fail "Could not create the virtual environment."
-elif [ ! -x "$VENV_PYTHON" ]; then
-  echo "The existing virtual environment looks incomplete. Recreating it..."
-  mv "$VENV_DIR" "venv_broken_$(date +%Y%m%d_%H%M%S)" || fail "Could not move the broken virtual environment aside."
-  "$PYTHON3_BIN" -m venv "$VENV_DIR" || fail "Could not recreate the virtual environment."
-else
-  echo "Virtual environment already exists."
-fi
-
-if command -v xattr >/dev/null 2>&1; then
-  # The virtual environment contains links into Apple's protected developer tools.
-  # Do not recurse into it when clearing Finder's download quarantine metadata.
-  xattr -d com.apple.quarantine "$VENV_DIR" >/dev/null 2>&1 || true
-fi
-
-if [ ! -x "$VENV_PYTHON" ]; then
-  fail "The virtual environment could not be prepared correctly."
-fi
-
-"$VENV_PYTHON" -m pip install --upgrade pip || fail "Could not upgrade pip."
+mkdir -p "$MAC_PACKAGES_DIR" || fail "Could not prepare the Mac package folder."
+export PYTHONPATH="$PROJECT_DIR/$MAC_PACKAGES_DIR"
 
 if [ -f "requirements.txt" ]; then
   echo "Installing requirements..."
-  "$VENV_PYTHON" -m pip install -r requirements.txt || fail "Could not install requirements.txt."
+  "$PYTHON3_BIN" -m pip install --upgrade --target "$MAC_PACKAGES_DIR" -r requirements.txt || fail "Could not install requirements.txt."
 else
   echo "No requirements.txt found. Installing Flask and Werkzeug..."
-  "$VENV_PYTHON" -m pip install Flask Werkzeug || fail "Could not install Flask and Werkzeug."
+  "$PYTHON3_BIN" -m pip install --upgrade --target "$MAC_PACKAGES_DIR" Flask Werkzeug || fail "Could not install Flask and Werkzeug."
 fi
 
-if ! "$VENV_PYTHON" -c "import flask" >/dev/null 2>&1; then
+if ! "$PYTHON3_BIN" -c "import flask" >/dev/null 2>&1; then
   fail "Flask was not installed successfully."
 fi
 
